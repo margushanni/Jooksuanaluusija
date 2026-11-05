@@ -1,0 +1,5 @@
+.venv/
+.vendor/
+.garmin-private/
+data/
+__pycache__/
