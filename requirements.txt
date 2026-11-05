@@ -1,0 +1,3 @@
+garmin-fit-sdk
+garmin-connect-personal-api-python
+comtypes>=1.4.11
