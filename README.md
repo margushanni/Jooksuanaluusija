@@ -20,7 +20,7 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 
 1. Otsib arvutiga ühendatud Garmini kella automaatselt, nii draivina kui ka Windowsi MTP/WPD-seadmena.
 2. Võimaldab valida FIT-faile või nende kausta käsitsi importimiseks.
-3. Impordib 2025. aasta jooksude FIT-failid Garmin Connect Personal API kaudu ning jätab korduvad failid vahele.
+3. Impordib kasutaja valitud kuupäevavahemiku jooksude FIT-failid Garmin Connect Personal API kaudu ning jätab korduvad failid vahele.
 4. Loeb FIT-failist treeningu RPE ja enesetunde; puuduva hinnangu märgib „Hinnang - märkimata”.
 5. Kuvab jooksude kuupäeva, distantsi, kestuse ja enesehinnangu ning võimaldab valida analüüsitava kuupäevavahemiku kalendrivaates.
 6. Eristab FIT-failis aktiivseks märgitud töölõigud soojendusest ja taastumisest ning võtab tempoanalüüsi arvesse kuni 5:30/km lõigud.
@@ -56,7 +56,7 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 ### 7. Valmisoleku kriteeriumid
 
 - Programm käivitub juhendi järgi Windowsi arvutis ning kuvab arusaadava veateate, kui sõltuvus või sisendfail puudub.
-- Kasutaja saab jooksud importida ühendatud kellast, valitud FIT-failidest või 2025. aasta Personal API päringuga.
+- Kasutaja saab jooksud importida ühendatud kellast, valitud FIT-failidest või kuupäevavahemikuga Personal API päringuga.
 - Korduv import ei lisa sama treeningut teist korda ning isiklikud FIT-failid ja tokenivahemälu ei lähe GitHubi.
 - Tabelis kuvatakse treeningu põhiandmed ja FIT-is olevad RPE/enesetunde hinnangud; puuduva hinnangu puhul kuvatakse „Hinnang - märkimata”.
 - RPE-tempo kokkuvõte kasutab ainult aktiivseid töölõike, jätab taastelõigud välja ja arvestab tempoga kuni 5:30/km.
@@ -84,7 +84,7 @@ Esimesel käivitamisel paigaldatakse vajalikud sõltuvused lokaalsesse `.venv` k
 ## Treeningute importimine
 
 - **Ühendatud kellast:** vajuta programmis **Otsi ühendatud Garmini kella**. Kui automaatotsing ei leia kella, saad valida FIT-kausta või üksikud failid.
-- **Garmin Connect Personal API-st:** vajuta **Impordi 2025 API-st** ja sisesta API võti programmi peidetud sisestusaknasse. Võtit ei salvestata.
+- **Garmin Connect Personal API-st:** vajuta **Impordi API-st…**, vali kuupäevavahemik ja sisesta API võti peidetud sisestusaknasse. Võtit ei salvestata.
 
 Lühiajaline bearer-token salvestatakse lokaalselt faili `.garmin-private\bearer-token-cache.json`. FIT-treeningud ja analüüsitulemused salvestatakse `data` kausta. Need failid on `.gitignore`-iga GitHubist välja jäetud.
 

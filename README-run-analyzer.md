@@ -14,12 +14,12 @@ Käivita projekti kaustas PowerShellis:
 
 Esimesel käivitamisel paigaldatakse vajalik SDK lokaalsesse `.venv` keskkonda ning MTP-seadmete lugemiseks vajalik allikakood `.vendor` kausta.
 
-## 2025. aasta jooksude import API-st
+## Jooksude import API-st
 
 1. Käivita programm.
-2. Vajuta **Impordi 2025 API-st** ja sisesta Garmin Personal API võti avanevasse peidetud sisestusaknasse. Võtit ei salvestata.
-3. Programm otsib Garmin Connectist 2025. aasta jooksud, laeb iga tegevuse FIT-faili alla ja lisab jooksud lokaalsesse analüüsi.
-4. Kuupäevavahemik lülitub 2025. aastale. Muuda algus- ja lõppkuupäeva kalendrivaate nuppudega või kirjuta kuupäev kujul `AAAA-KK-PP`. Vali **Kuva kõik kuupäevad**, et analüüsida kõiki lokaalseid jookse.
+2. Vajuta **Impordi API-st…** ja vali impordi algus- ning lõppkuupäev kalendrist või sisesta need kujul `AAAA-KK-PP`.
+3. Vajuta **Jätka API võtmega…** ja sisesta Garmin Personal API võti avanevasse peidetud sisestusaknasse. Võtit ei salvestata.
+4. Programm otsib valitud ajavahemiku jooksud, laeb nende FIT-failid alla ja lisab jooksud lokaalsesse analüüsi. Pärast importi seatakse analüüsi kuupäevavahemik imporditud perioodile.
 
 Import võib sõltuvalt jooksude arvust aega võtta. Sama FIT-faili kordusimport jäetakse vahele. Lühiajaline API bearer-token jääb lokaalselt faili `.garmin-private\bearer-token-cache.json`; treeningute FIT-failid asuvad kaustas `data\fit`.
 

@@ -309,7 +309,7 @@ class RunAnalyzer(tk.Tk):
         ttk.Button(actions, text="Otsi ühendatud Garmini kella", command=self._scan_watch).pack(side="left")
         ttk.Button(actions, text="Vali FIT-kaust…", command=self._choose_folder).pack(side="left", padx=8)
         ttk.Button(actions, text="Vali FIT-failid…", command=self._choose_files).pack(side="left")
-        self.api_button = ttk.Button(actions, text="Impordi 2025 API-st", command=self._import_2025_from_api)
+        self.api_button = ttk.Button(actions, text="Impordi API-st…", command=self._import_from_api)
         self.api_button.pack(side="left", padx=8)
         date_filter = ttk.Frame(outer)
         date_filter.pack(fill="x", pady=(0, 8))
@@ -492,16 +492,19 @@ class RunAnalyzer(tk.Tk):
         self._date_defaults_set = True
         self._refresh()
 
-    def _open_calendar(self, target_var: tk.StringVar) -> None:
+    def _open_calendar(
+        self, target_var: tk.StringVar, *, refresh_analysis: bool = True, parent: tk.Misc | None = None
+    ) -> None:
         try:
             selected = date.fromisoformat(target_var.get())
         except ValueError:
             selected = date.today()
         month = [selected.replace(day=1)]
 
-        popup = tk.Toplevel(self)
+        owner = parent or self
+        popup = tk.Toplevel(owner)
         popup.title("Vali kuupäev")
-        popup.transient(self)
+        popup.transient(owner)
         popup.resizable(False, False)
         popup.grab_set()
 
@@ -524,7 +527,8 @@ class RunAnalyzer(tk.Tk):
         def choose_day(day_number: int) -> None:
             target_var.set(month[0].replace(day=day_number).isoformat())
             popup.destroy()
-            self._refresh()
+            if refresh_analysis:
+                self._refresh()
 
         def render_month() -> None:
             month_names = (
@@ -563,7 +567,68 @@ class RunAnalyzer(tk.Tk):
         if paths:
             self._import_files([Path(path) for path in paths])
 
-    def _import_2025_from_api(self) -> None:
+    def _import_from_api(self) -> None:
+        start_var = tk.StringVar(value=self.start_date_var.get() or "2025-01-01")
+        end_var = tk.StringVar(value=self.end_date_var.get() or "2025-12-31")
+        dialog = tk.Toplevel(self)
+        dialog.title("Vali API impordi kuupäevavahemik")
+        dialog.transient(self)
+        dialog.resizable(False, False)
+        dialog.grab_set()
+
+        content = ttk.Frame(dialog, padding=14)
+        content.pack(fill="both", expand=True)
+        ttk.Label(content, text="Vali, millise ajavahemiku jooksud Garmin Connectist alla laadida.").pack(
+            anchor="w", pady=(0, 10)
+        )
+
+        fields = ttk.Frame(content)
+        fields.pack(fill="x")
+        ttk.Label(fields, text="Alates").grid(row=0, column=0, sticky="w", padx=(0, 6), pady=4)
+        start_entry = ttk.Entry(fields, textvariable=start_var, width=13)
+        start_entry.grid(row=0, column=1, padx=(0, 4), pady=4)
+        ttk.Button(
+            fields,
+            text="Kalender…",
+            command=lambda: self._open_calendar(start_var, refresh_analysis=False, parent=dialog),
+        ).grid(row=0, column=2, padx=(0, 12), pady=4)
+        ttk.Label(fields, text="Kuni").grid(row=0, column=3, sticky="w", padx=(0, 6), pady=4)
+        end_entry = ttk.Entry(fields, textvariable=end_var, width=13)
+        end_entry.grid(row=0, column=4, padx=(0, 4), pady=4)
+        ttk.Button(
+            fields,
+            text="Kalender…",
+            command=lambda: self._open_calendar(end_var, refresh_analysis=False, parent=dialog),
+        ).grid(row=0, column=5, pady=4)
+
+        def continue_to_key() -> None:
+            try:
+                start_date = date.fromisoformat(start_var.get())
+                end_date = date.fromisoformat(end_var.get())
+            except ValueError:
+                messagebox.showerror(
+                    "Vigane kuupäev",
+                    "Sisesta kuupäevad kujul AAAA-KK-PP või vali need kalendrist.",
+                    parent=dialog,
+                )
+                return
+            if start_date > end_date:
+                messagebox.showerror(
+                    "Vigane kuupäevavahemik",
+                    "Alguskuupäev peab olema lõppkuupäevast varasem või sama.",
+                    parent=dialog,
+                )
+                return
+            dialog.destroy()
+            self._request_api_key(start_date.isoformat(), end_date.isoformat())
+
+        controls = ttk.Frame(content)
+        controls.pack(fill="x", pady=(12, 0))
+        ttk.Button(controls, text="Katkesta", command=dialog.destroy).pack(side="right")
+        ttk.Button(controls, text="Jätka API võtmega…", command=continue_to_key).pack(side="right", padx=(0, 8))
+        start_entry.focus_set()
+
+    def _request_api_key(self, start_date: str, end_date: str) -> None:
         api_key = simpledialog.askstring(
             "Garmin Personal API",
             "Sisesta Garmini Personal API võti. Seda ei salvestata; kasutatakse ainult selle päringu jaoks.",
@@ -575,12 +640,14 @@ class RunAnalyzer(tk.Tk):
 
         api_key = api_key.strip()
         self.api_button.configure(state="disabled")
-        self.status.set("Ühendun Garmin Connectiga ja otsin 2025. aasta jookse…")
+        self.status.set(f"Ühendun Garmin Connectiga ja otsin jookse: {start_date} kuni {end_date}…")
         self.update_idletasks()
-        worker = threading.Thread(target=self._download_2025_api_files, args=(api_key,), daemon=True)
+        worker = threading.Thread(
+            target=self._download_api_files, args=(api_key, start_date, end_date), daemon=True
+        )
         worker.start()
 
-    def _download_2025_api_files(self, api_key: str) -> None:
+    def _download_api_files(self, api_key: str, start_date: str, end_date: str) -> None:
         paths: list[Path] = []
         failures: list[str] = []
         activity_count = 0
@@ -600,8 +667,8 @@ class RunAnalyzer(tk.Tk):
                         client.search_activities(
                             start=offset,
                             limit=100,
-                            start_date="2025-01-01",
-                            end_date="2025-12-31",
+                            start_date=start_date,
+                            end_date=end_date,
                             activity_type="running",
                         )
                     )
@@ -637,7 +704,7 @@ class RunAnalyzer(tk.Tk):
                         self.after(
                             0,
                             lambda done=index, total=activity_count: self.status.set(
-                                f"2025 jooksude FIT-faile alla laaditud: {done}/{total}…"
+                                f"API impordi FIT-faile alla laaditud: {done}/{total}…"
                             ),
                         )
         except Exception as exc:
@@ -647,16 +714,19 @@ class RunAnalyzer(tk.Tk):
                 del api_key
             except UnboundLocalError:
                 pass
-            self.after(0, lambda: self._finish_api_import(paths, activity_count, failures))
+            self.after(
+                0,
+                lambda: self._finish_api_import(paths, activity_count, failures, start_date, end_date),
+            )
 
     def _finish_api_import(
-        self, paths: list[Path], activity_count: int, failures: list[str]
+        self, paths: list[Path], activity_count: int, failures: list[str], start_date: str, end_date: str
     ) -> None:
         self.api_button.configure(state="normal")
         if paths:
             self._date_defaults_set = True
-            self.start_date_var.set("2025-01-01")
-            self.end_date_var.set("2025-12-31")
+            self.start_date_var.set(start_date)
+            self.end_date_var.set(end_date)
             added, skipped, errors, examples = self._import_files(paths)
         else:
             added, skipped, errors, examples = 0, 0, 0, []
@@ -669,7 +739,8 @@ class RunAnalyzer(tk.Tk):
 
         self._refresh()
         self.status.set(
-            f"2025 API import lõpetatud: {activity_count} jooksu leitud, {added} FIT-jooksu lisatud, "
+            f"API import lõpetatud ({start_date} kuni {end_date}): {activity_count} jooksu leitud, "
+            f"{added} FIT-jooksu lisatud, "
             f"{skipped} vahele jäetud, {len(failures)} allalaadimisviga."
         )
         if failures:
@@ -678,7 +749,8 @@ class RunAnalyzer(tk.Tk):
                 detail += "\n" + examples[0]
             messagebox.showwarning(
                 "Garmin API import",
-                f"Leiti {activity_count} 2025. aasta jooksu; FIT-failidest lisati {added}.\n\n{detail}",
+                f"Leiti {activity_count} jooksu ajavahemikust {start_date} kuni {end_date}; "
+                f"FIT-failidest lisati {added}.\n\n{detail}",
             )
 
     def _import_files(self, paths: list[Path]) -> tuple[int, int, int, list[str]]:

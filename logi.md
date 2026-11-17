@@ -25,3 +25,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** lisatud kalendrivaatega kuupäevavalikud, kuupäevade käsitsi sisestus ning kõigi kuupäevade kuvamise nupp. Valitud vahemik filtreerib jooksude tabelit ja kokkuvõtet; 2025 API import seab vahemikuks 2025. aasta. Tühja vahemiku korral kuvatakse teade. Uuendatud käivitusjuhendit ja README projekti kirjeldust.
 - **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
 - **Tulemus:** kasutaja saab valida analüüsi kuupäevavahemiku kalendrist. Rakenduses visuaalne kontroll tegemata.
+
+## 2026-11-17 — API impordi kuupäevavahemiku valik
+
+- **Seotud Issue:** [#1 — Lisa kuupäevavahemik ja perioodide kiirvalikud](https://github.com/margushanni/Jooksuanaluusija/issues/1).
+- **Eesmärk:** lubada Garmin Connect Personal API-st jooksude importimisel valida ise päringu algus- ja lõppkuupäev.
+- **Muudatused:** API impordi nupp avab kuupäevavahemiku akna kahe kalendrivaatega; kuupäevi saab ka käsitsi sisestada. Päring kasutab valitud kuupäevi ja pärast importi seatakse analüüsivahemik samale perioodile. Vaikimisi kasutatakse analüüsivahemikku või 2025. aastat, kui see puudub. Uuendatud kasutusjuhendid.
+- **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
+- **Tulemus:** API import ei ole enam piiratud 2025. aastaga; kasutaja saab valida imporditava ajavahemiku. Visuaalne kontroll tegemata.
