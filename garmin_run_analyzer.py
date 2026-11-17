@@ -550,7 +550,15 @@ class RunAnalyzer(tk.Tk):
         header.pack(fill="x")
         body = ttk.Frame(popup, padding=(8, 0, 8, 8))
         body.pack()
-        title = ttk.Label(header, width=18, anchor="center")
+        month_names = (
+            "jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
+            "juuli", "august", "september", "oktoober", "november", "detsember",
+        )
+        month_var = tk.StringVar(value=month_names[month[0].month - 1])
+        year_var = tk.StringVar(value=str(month[0].year))
+        year_start = min(1980, month[0].year)
+        year_end = max(date.today().year + 2, month[0].year)
+        year_values = tuple(str(year) for year in range(year_start, year_end + 1))
 
         def shift_month(delta: int) -> None:
             current = month[0]
@@ -558,9 +566,22 @@ class RunAnalyzer(tk.Tk):
             month[0] = date(index // 12, index % 12 + 1, 1)
             render_month()
 
+        def select_month_or_year(_event: Any = None) -> None:
+            month[0] = date(int(year_var.get()), month_names.index(month_var.get()) + 1, 1)
+            render_month()
+
         ttk.Button(header, text="‹", width=3, command=lambda: shift_month(-1)).pack(side="left")
-        title.pack(side="left", padx=4)
+        month_choice = ttk.Combobox(
+            header, textvariable=month_var, values=month_names, state="readonly", width=11
+        )
+        month_choice.pack(side="left", padx=(4, 2))
+        year_choice = ttk.Combobox(
+            header, textvariable=year_var, values=year_values, state="readonly", width=6
+        )
+        year_choice.pack(side="left", padx=2)
         ttk.Button(header, text="›", width=3, command=lambda: shift_month(1)).pack(side="left")
+        month_choice.bind("<<ComboboxSelected>>", select_month_or_year)
+        year_choice.bind("<<ComboboxSelected>>", select_month_or_year)
 
         def choose_day(day_number: int) -> None:
             target_var.set(month[0].replace(day=day_number).isoformat())
@@ -569,11 +590,8 @@ class RunAnalyzer(tk.Tk):
                 self._refresh()
 
         def render_month() -> None:
-            month_names = (
-                "jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
-                "juuli", "august", "september", "oktoober", "november", "detsember",
-            )
-            title.configure(text=f"{month_names[month[0].month - 1]} {month[0].year}")
+            month_var.set(month_names[month[0].month - 1])
+            year_var.set(str(month[0].year))
             for child in body.winfo_children():
                 child.destroy()
             for column, weekday in enumerate(("E", "T", "K", "N", "R", "L", "P")):

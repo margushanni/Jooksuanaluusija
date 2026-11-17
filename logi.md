@@ -65,3 +65,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** silt on nüüd **Analüüsitav tempovahemik (min/km, m:ss)**.
 - **Kontroll:** `git diff --check` läbis.
 - **Tulemus:** kasutajaliides näitab selgemalt tempoühikut ja sisestusvormingut.
+
+## 2026-11-17 — Kalendris kuu ja aasta kiirvalik
+
+- **Seotud Issue:** [#1 — Lisa kuupäevavahemik ja perioodide kiirvalikud](https://github.com/margushanni/Jooksuanaluusija/issues/1).
+- **Eesmärk:** muuta kuupäeva valimine mugavamaks pikkade ajavahemike korral.
+- **Muudatused:** kalendrisse lisatud kuu ja aasta rippmenüüd; nooled jäid lähikuude liikumiseks alles. Täpsustatud kasutusjuhendit.
+- **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
+- **Tulemus:** kuupäeva saab valida otse soovitud kuu ja aasta vaates, ilma vahepealseid kuid läbi kerimata.
