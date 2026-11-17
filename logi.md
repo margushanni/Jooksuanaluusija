@@ -73,3 +73,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** kalendrisse lisatud kuu ja aasta rippmenüüd; nooled jäid lähikuude liikumiseks alles. Täpsustatud kasutusjuhendit.
 - **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
 - **Tulemus:** kuupäeva saab valida otse soovitud kuu ja aasta vaates, ilma vahepealseid kuid läbi kerimata.
+
+## 2026-11-17 — API impordi olek ja veakirjeldused
+
+- **Seotud Issue:** kavandatud „Näita API impordi staatust ja konkreetseid veateateid”; GitHubi Issue’i loomise API tagastas 403 (`Resource not accessible by integration`), seega eraldi Issue jäi loomata.
+- **Eesmärk:** näidata, kas API võti kinnitati ning kas tegevuste otsimine, FIT-failide allalaadimine ja nende analüüsi lisamine õnnestub.
+- **Muudatused:** lisatud olekuteated API võtme kontrolli, jooksude päringu, FIT-failide allalaadimise ja failide töötlemise kohta. Edu korral kuvatakse kokkuvõtte dialoog; API või FIT-i vea korral näidatakse etapp ja veakirjeldus.
+- **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
+- **Tulemus:** kasutaja saab API impordi käigust selge tagasiside ja vea korral täpsema kirjelduse.

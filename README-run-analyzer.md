@@ -21,6 +21,8 @@ Esimesel käivitamisel paigaldatakse vajalik SDK lokaalsesse `.venv` keskkonda n
 3. Vajuta **Jätka API võtmega…** ja sisesta Garmin Personal API võti avanevasse peidetud sisestusaknasse. Võtit ei salvestata.
 4. Programm otsib valitud ajavahemiku jooksud, laeb nende FIT-failid alla ja lisab jooksud lokaalsesse analüüsi. Pärast importi seatakse analüüsi kuupäevavahemik imporditud perioodile.
 
+Importimise ajal näitab olekuriba API võtme kontrolli, leitud jooksude arvu ning FIT-failide allalaadimise ja analüüsi lisamise edenemist. Lõpus kuvatakse õnnestumise kokkuvõte. Kui võtme kontroll, allalaadimine või FIT-faili lugemine ebaõnnestub, näidatakse vea etappi ja kirjeldust.
+
 Import võib sõltuvalt jooksude arvust aega võtta. Sama FIT-faili kordusimport jäetakse vahele. Lühiajaline API bearer-token jääb lokaalselt faili `.garmin-private\bearer-token-cache.json`; treeningute FIT-failid asuvad kaustas `data\fit`.
 
 ## Kellast importimine

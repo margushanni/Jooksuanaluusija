@@ -696,7 +696,7 @@ class RunAnalyzer(tk.Tk):
 
         api_key = api_key.strip()
         self.api_button.configure(state="disabled")
-        self.status.set(f"Ühendun Garmin Connectiga ja otsin jookse: {start_date} kuni {end_date}…")
+        self.status.set(f"Kontrollin API võtit ning ühendan Garmin Connectiga: {start_date} kuni {end_date}…")
         self.update_idletasks()
         worker = threading.Thread(
             target=self._download_api_files, args=(api_key, start_date, end_date), daemon=True
@@ -707,14 +707,23 @@ class RunAnalyzer(tk.Tk):
         paths: list[Path] = []
         failures: list[str] = []
         activity_count = 0
+        api_key_valid = False
+        stage = "Garmin API kliendi laadimine"
         try:
             from garmin_personal_api import GarminPersonalApiClient, PersonalApiAuthenticator
 
             API_INCOMING_DIR.mkdir(parents=True, exist_ok=True)
+            stage = "API võtme kontroll"
             with PersonalApiAuthenticator(bearer_token_cache_file=TOKEN_CACHE) as auth:
                 token = auth.obtain_token(api_key)
+            api_key_valid = True
+            self.after(
+                0,
+                lambda: self.status.set("API võti on õige. Otsin valitud ajavahemiku jooksutreeninguid…"),
+            )
             del api_key
 
+            stage = "Garmin Connecti jooksude päring"
             with GarminPersonalApiClient(token.access_token) as client:
                 activities: list[dict[str, Any]] = []
                 offset = 0
@@ -734,6 +743,13 @@ class RunAnalyzer(tk.Tk):
                     offset += 100
 
                 activity_count = len(activities)
+                self.after(
+                    0,
+                    lambda count=activity_count: self.status.set(
+                        f"API võti on õige. Leidsin {count} jooksu; alustan FIT-failide allalaadimist…"
+                    ),
+                )
+                stage = "FIT-failide allalaadimine"
                 for index, activity in enumerate(activities, start=1):
                     activity_id = activity.get("activityId")
                     if not activity_id:
@@ -755,16 +771,18 @@ class RunAnalyzer(tk.Tk):
                                 paths.append(target)
                     except Exception as exc:
                         if len(failures) < 8:
-                            failures.append(f"Tegevus {activity_id}: {exc}")
-                    if index % 10 == 0 or index == activity_count:
+                            failures.append(f"FIT-faili allalaadimine, tegevus {activity_id}: {exc}")
+                    if index % 5 == 0 or index == activity_count:
+                        downloaded_files = len(paths)
                         self.after(
                             0,
-                            lambda done=index, total=activity_count: self.status.set(
-                                f"API impordi FIT-faile alla laaditud: {done}/{total}…"
+                            lambda done=index, total=activity_count, files=downloaded_files: self.status.set(
+                                f"API võti on õige. FIT-failide allalaadimine: {done}/{total} tegevust; "
+                                f"{files} faili alla laaditud…"
                             ),
                         )
         except Exception as exc:
-            failures.append(str(exc))
+            failures.append(f"{stage}: {exc}")
         finally:
             try:
                 del api_key
@@ -772,18 +790,29 @@ class RunAnalyzer(tk.Tk):
                 pass
             self.after(
                 0,
-                lambda: self._finish_api_import(paths, activity_count, failures, start_date, end_date),
+                lambda: self._finish_api_import(
+                    paths, activity_count, failures, start_date, end_date, api_key_valid
+                ),
             )
 
     def _finish_api_import(
-        self, paths: list[Path], activity_count: int, failures: list[str], start_date: str, end_date: str
+        self,
+        paths: list[Path],
+        activity_count: int,
+        failures: list[str],
+        start_date: str,
+        end_date: str,
+        api_key_valid: bool,
     ) -> None:
-        self.api_button.configure(state="normal")
         if paths:
             self._date_defaults_set = True
             self.start_date_var.set(start_date)
             self.end_date_var.set(end_date)
-            added, skipped, errors, examples = self._import_files(paths)
+            self.status.set(f"FIT-failid on alla laaditud ({len(paths)}). Lisan neid analüüsi…")
+            self.update_idletasks()
+            added, skipped, errors, examples = self._import_files(
+                paths, progress_label="Lisan FIT-faile analüüsi", show_warning=False
+            )
         else:
             added, skipped, errors, examples = 0, 0, 0, []
         for path in paths:
@@ -794,22 +823,38 @@ class RunAnalyzer(tk.Tk):
             pass
 
         self._refresh()
+        key_status = "API võti oli õige" if api_key_valid else "API võtit ei saanud kinnitada"
         self.status.set(
-            f"API import lõpetatud ({start_date} kuni {end_date}): {activity_count} jooksu leitud, "
-            f"{added} FIT-jooksu lisatud, "
-            f"{skipped} vahele jäetud, {len(failures)} allalaadimisviga."
+            f"{key_status}. API import lõpetatud ({start_date} kuni {end_date}): "
+            f"{activity_count} jooksu leitud, {len(paths)} FIT-faili alla laaditud, "
+            f"{added} jooksu lisatud, {skipped} vahele jäetud, "
+            f"{len(failures)} API/allalaadimisviga ja {errors} FIT-lugemisviga."
         )
-        if failures:
-            detail = "\n".join(failures[:5])
-            if examples:
-                detail += "\n" + examples[0]
-            messagebox.showwarning(
-                "Garmin API import",
-                f"Leiti {activity_count} jooksu ajavahemikust {start_date} kuni {end_date}; "
-                f"FIT-failidest lisati {added}.\n\n{detail}",
-            )
+        self.api_button.configure(state="normal")
+        if failures or errors:
+            detail_parts = [self.status.get()]
+            if not api_key_valid:
+                detail_parts.append("API võti võib olla vale või ühendus ei võimaldanud seda kinnitada.")
+            if failures:
+                detail_parts.append("API/allalaadimise vead:\n" + "\n".join(failures[:8]))
+            if errors:
+                detail_parts.append(
+                    f"FIT-failide lugemise vead ({errors}); näited:\n" + "\n".join(examples)
+                )
+            if not api_key_valid:
+                messagebox.showerror("API võtit ei saanud kinnitada", "\n\n".join(detail_parts))
+            else:
+                messagebox.showwarning("Garmin API impordis tekkis viga", "\n\n".join(detail_parts))
+        else:
+            messagebox.showinfo("Garmin API import õnnestus", self.status.get())
 
-    def _import_files(self, paths: list[Path]) -> tuple[int, int, int, list[str]]:
+    def _import_files(
+        self,
+        paths: list[Path],
+        *,
+        progress_label: str | None = None,
+        show_warning: bool = True,
+    ) -> tuple[int, int, int, list[str]]:
         if not paths:
             self.status.set("Valitud asukohast FIT-faile ei leitud.")
             return 0, 0, 0, []
@@ -817,7 +862,7 @@ class RunAnalyzer(tk.Tk):
         skipped = 0
         errors = 0
         examples: list[str] = []
-        for source in paths:
+        for index, source in enumerate(paths, start=1):
             try:
                 digest = hashlib.sha256(source.read_bytes()).hexdigest()
                 if digest in self.runs:
@@ -843,12 +888,16 @@ class RunAnalyzer(tk.Tk):
                 errors += 1
                 if len(examples) < 3:
                     examples.append(f"{source.name}: {exc}")
+            finally:
+                if progress_label and (index % 5 == 0 or index == len(paths)):
+                    self.status.set(f"{progress_label}: {index}/{len(paths)} faili…")
+                    self.update_idletasks()
         self._refresh()
         self.status.set(
             f"Leitud {len(paths)} FIT-faili; lisatud jooksuna {added}; "
             f"vahele jäetud {skipped}; lugemisvead {errors}."
         )
-        if added == 0 and paths:
+        if show_warning and added == 0 and paths:
             details = f"Leiti {len(paths)} FIT-faili, kuid ühtegi jooksu ei lisatud."
             if skipped:
                 details += f" {skipped} faili ei tuvastatud jooksuna või nende FIT-struktuuri ei õnnestunud tõlgendada."
