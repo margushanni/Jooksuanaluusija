@@ -24,8 +24,8 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 4. Loeb FIT-failist treeningu RPE ja enesetunde; puuduva hinnangu märgib „Hinnang - märkimata”.
 5. Kuvab jooksude kuupäeva, distantsi, kestuse ja enesehinnangu ning võimaldab valida analüüsitava kuupäevavahemiku kalendrivaates.
 6. Eristab FIT-failis aktiivseks märgitud töölõigud soojendusest ja taastumisest ning laseb valida analüüsitavate lõikude tempovahemiku (vaikimisi kuni 5:30/km).
-7. Arvutab aktiivlõikude kaalutud keskmise töötempo ning võrdleb seda RPE ja aktiivse töö kestuse või distantsiga.
-8. Võimaldab analüüsida kõiki jookse või ainult FIT-is aktiivlõike sisaldavaid jookse; tempovahemiku valik kehtib mõlema valiku korral.
+7. Arvutab aktiivlõikude režiimis valitud lõikude kaalutud töötempo ning võrdleb seda RPE ja aktiivse töö kestuse või distantsiga; kõigi jooksude režiimis analüüsib jooksu keskmist tempot.
+8. Võimaldab analüüsida kõiki jookse või ainult aktiivlõikudega jookse; esimesel juhul filtreeritakse kogu jooksu keskmise tempo, teisel juhul aktiivlõikude tempo järgi.
 
 **Edasi plaanitav:**
 
@@ -58,10 +58,11 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 - Kasutaja saab jooksud importida ühendatud kellast, valitud FIT-failidest või kuupäevavahemikuga Personal API päringuga.
 - Korduv import ei lisa sama treeningut teist korda ning isiklikud FIT-failid ja tokenivahemälu ei lähe GitHubi.
 - Tabelis kuvatakse treeningu põhiandmed ja FIT-is olevad RPE/enesetunde hinnangud; puuduva hinnangu puhul kuvatakse „Hinnang - märkimata”.
-- RPE-tempo kokkuvõte kasutab ainult kasutaja valitud tempovahemikku jäävaid aktiivlõike ning jätab soojendus- ja taastelõigud välja; vaikimisi on ülempiir 5:30/km.
+- Kõigi jooksude režiimis võrdleb tempovahemik kogu jooksu keskmist tempot; aktiivlõikude režiimis võrdleb see FIT-i aktiivlõikude tempoid. Filtrile mittevastavad jooksud jäetakse tabelist ja kokkuvõttest välja.
+- RPE-tempo kokkuvõte kasutab aktiivlõikude režiimis valitud tempovahemikku jäävaid lõike ning jätab soojendus- ja taastelõigud välja; vaikimisi on ülempiir 5:30/km.
 - Töötempo arvutus arvestab aktiivlõikude koguaega ja kogudistantsi ning kokkuvõttes saab võrrelda tulemusi ka töö kestuse ja distantsi järgi.
 - Kasutaja saab valida algus- ja lõppkuupäeva kalendrivaates ning tulemused uuenevad vastavalt valikule.
-- Kasutaja saab valida kõik jooksud või ainult aktiivlõikudega jooksud; tempovahemiku valik rakendub mõlema filtri korral.
+- Kasutaja saab valida kõik jooksud või ainult aktiivlõikudega jooksud; tempovahemik filtreerib esimesel juhul kogu jooksu keskmist ja teisel juhul aktiivlõikude tempot.
 - Kasutaja saab kombineerida jooksu- ja kuupäevavahemiku filtreid ning valida, kas pingutust võrreldakse RPE või pulsisagedusega.
 - Valitud ajavahemiku tulemus näitab keskmise tempo arengut valitud pingutusmõõdiku järgi; puuduva mõõdiku korral kuvatakse see arusaadavalt.
 - Kasutusjuhend selgitab käivitamist, importi, analüüsi ja isikuandmete kohalikku säilitamist.

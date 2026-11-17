@@ -49,3 +49,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** lisatud jooksufiltri valik; aktiivlõikudeta jooksud eemaldatakse tabelist ja kokkuvõttest ainult vastava filtri valimisel. Aktiivlõikude tempovahemik rakendub mõlema jooksufiltri korral. Uuendatud juhendid ja valmisoleku kirjeldus.
 - **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
 - **Tulemus:** kasutaja saab jooksude hulka piirata aktiivlõikudega treeningutele, jättes tempovahemiku filtri alles. Visuaalne kontroll tegemata.
+
+## 2026-11-17 — Tempovahemiku arvestamine jooksurežiimi järgi
+
+- **Seotud Issue:** [#2 — Lisa jooksu tüübi ja tempovahemiku filtrid](https://github.com/margushanni/Jooksuanaluusija/issues/2).
+- **Eesmärk:** kohandada tempovahemiku filtrit valitud analüüsirežiimile ning peita jooksud, mis filtrile ei vasta.
+- **Muudatused:** režiimis **Kõik jooksud** filtreerimine ja RPE-tempokokkuvõte kasutavad kogu jooksu keskmist tempot. Režiimis **Ainult aktiivlõikudega** kasutatakse valitud tempovahemikku jäävaid aktiivlõike. Filtrile mittevastavad jooksud jäetakse tabelist ja kokkuvõttest välja; tabeli veerud kohanduvad režiimile. Täpsustatud kasutusjuhendit.
+- **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
+- **Tulemus:** tempovahemik käitub valitud režiimi järgi ning mittevastavaid jookse ei kuvata. Visuaalne kontroll tegemata.

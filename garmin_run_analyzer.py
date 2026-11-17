@@ -868,25 +868,62 @@ class RunAnalyzer(tk.Tk):
             return
         for row in self.table.get_children():
             self.table.delete(row)
+        active_only = self.run_filter_var.get() == "Ainult aktiivlõikudega"
+
+        def pace_matches(pace: float | None) -> bool:
+            return (
+                min_pace is None and max_pace is None
+                or pace is not None
+                and (min_pace is None or pace >= min_pace)
+                and (max_pace is None or pace <= max_pace)
+            )
+
         filtered = [
             run for run in self.runs.values()
             if (start_date is None or run.start.date() >= start_date)
             and (end_date is None or run.start.date() <= end_date)
-            and (self.run_filter_var.get() != "Ainult aktiivlõikudega" or bool(run.active_lap_paces))
+            and (
+                bool(_qualifying_work_laps(run, min_pace, max_pace))
+                if active_only
+                else pace_matches(run.pace_s_per_km)
+            )
         ]
         ordered = sorted(filtered, key=lambda run: run.start, reverse=True)
+        if active_only:
+            self.table.configure(
+                displaycolumns=(
+                    "date", "self_rating", "distance", "duration", "active_laps",
+                    "work_pace", "work_time", "work_distance", "ascent",
+                )
+            )
+            self.table.heading("active_laps", text="Valitud lõikeid")
+            self.table.heading("work_pace", text="Töötempo")
+            self.table.heading("work_time", text="Töömin")
+            self.table.heading("work_distance", text="Töökilomeetrid")
+        else:
+            self.table.configure(
+                displaycolumns=("date", "self_rating", "distance", "duration", "active_laps", "work_pace", "ascent")
+            )
+            self.table.heading("active_laps", text="Aktiivlõike")
+            self.table.heading("work_pace", text="Keskmine tempo")
         for run in ordered:
             key = run.key
-            work_laps = _qualifying_work_laps(run, min_pace, max_pace)
-            work_pace = (
-                sum(lap[2] for lap in work_laps) / (sum(lap[1] for lap in work_laps) / 1000)
-                if work_laps else None
-            )
-            pace_label = (
-                _format_pace(work_pace)
-                if work_pace is not None
-                else "Pole vahemikus" if run.active_lap_paces else "FIT-is märkimata"
-            )
+            if active_only:
+                work_laps = _qualifying_work_laps(run, min_pace, max_pace)
+                analyzed_pace = (
+                    sum(lap[2] for lap in work_laps) / (sum(lap[1] for lap in work_laps) / 1000)
+                    if work_laps else None
+                )
+                lap_count = str(len(work_laps))
+                shown_time = f"{sum(lap[2] for lap in work_laps) / 60:.0f} min" if work_laps else "—"
+                shown_distance = f"{sum(lap[1] for lap in work_laps) / 1000:.1f} km" if work_laps else "—"
+            else:
+                work_laps = []
+                analyzed_pace = run.pace_s_per_km
+                lap_count = str(len(run.active_lap_paces)) if run.active_lap_paces else "—"
+                shown_time = _format_duration(run.duration_s)
+                shown_distance = f"{run.distance_m / 1000:.1f} km"
+            pace_label = _format_pace(analyzed_pace)
             self.table.insert(
                 "",
                 "end",
@@ -896,61 +933,95 @@ class RunAnalyzer(tk.Tk):
                     _format_self_rating(run),
                     f"{run.distance_m / 1000:.2f} km",
                     _format_duration(run.duration_s),
-                    str(len(work_laps)) if run.active_lap_paces else "—",
+                    lap_count,
                     pace_label,
-                    f"{sum(lap[2] for lap in work_laps) / 60:.0f} min" if work_laps else "—",
-                    f"{sum(lap[1] for lap in work_laps) / 1000:.1f} km" if work_laps else "—",
+                    shown_time,
+                    shown_distance,
                     f"{run.ascent_m:.0f} m" if run.ascent_m is not None else "—",
                 ),
             )
         self._update_summary(ordered, min_pace, max_pace)
 
     def _update_summary(self, runs: list[Run], min_pace: float | None, max_pace: float | None) -> None:
+        active_only = self.run_filter_var.get() == "Ainult aktiivlõikudega"
         total_km = sum(run.distance_m for run in runs) / 1000
         total_hours = sum(run.duration_s for run in runs) / 3600
         lines = [f"Kokku: {len(runs)} jooksu · {total_km:.1f} km · {total_hours:.1f} tundi"]
         lines.append(f"Jooksufilter: {self.run_filter_var.get()}")
+        lines.append(
+            "Tempovahemik rakendub aktiivlõikudele."
+            if active_only
+            else "Tempovahemik rakendub kogu jooksu keskmisele tempole."
+        )
         if not runs:
             lines.append("Valitud filtritele vastavaid jookse ei leidu.")
         rated = [run for run in runs if run.self_rpe is not None or run.self_feel is not None]
         unmarked = len(runs) - len(rated)
         lines.append(f"FIT-enesehinnang olemas: {len(rated)} jooksu · hinnang märkimata: {unmarked} jooksu")
         runs_with_rpe = [run for run in runs if run.self_rpe is not None]
-        work_laps = {
-            run.key: _qualifying_work_laps(run, min_pace, max_pace)
-            for run in runs_with_rpe
-        }
-        runs_with_active_laps = [run for run in runs_with_rpe if work_laps[run.key]]
         pace_range = _format_pace_range(min_pace, max_pace)
-        lines.append(
-            f"Lõiguanalüüs ({pace_range}): {len(runs_with_active_laps)}/{len(runs_with_rpe)} "
-            "RPE-ga jooksus on valitud vahemikku jäävaid aktiivlõike."
+        work_laps = (
+            {
+                run.key: _qualifying_work_laps(run, min_pace, max_pace)
+                for run in runs_with_rpe
+            }
+            if active_only
+            else {}
         )
-        lines.append(f"RPE järgi · valitud lõikude aja ja distantsi kaalutud keskmine tempo ({pace_range}):")
+        if active_only:
+            runs_with_selected_laps = [run for run in runs_with_rpe if work_laps[run.key]]
+            lines.append(
+                f"Lõiguanalüüs ({pace_range}): {len(runs_with_selected_laps)}/{len(runs_with_rpe)} "
+                "RPE-ga jooksus on valitud vahemikku jäävaid aktiivlõike."
+            )
+            lines.append(f"RPE järgi · aktiivlõikude kaalutud keskmine tempo ({pace_range}):")
+        else:
+            lines.append(f"RPE järgi · kogu jooksu keskmine tempo ({pace_range}):")
         rpe_values = sorted({run.self_rpe for run in runs if run.self_rpe is not None})
         for rpe in rpe_values:
             group = [run for run in runs if run.self_rpe == rpe]
-            selected = [run for run in group if work_laps.get(run.key)]
-            paces = [
-                sum(lap[2] for lap in work_laps[run.key]) / (sum(lap[1] for lap in work_laps[run.key]) / 1000)
-                for run in selected
-            ]
-            active_minutes = [sum(lap[2] for lap in work_laps[run.key]) / 60 for run in selected]
-            active_km = [sum(lap[1] for lap in work_laps[run.key]) / 1000 for run in selected]
+            if active_only:
+                selected = [run for run in group if work_laps.get(run.key)]
+                paces = [
+                    sum(lap[2] for lap in work_laps[run.key])
+                    / (sum(lap[1] for lap in work_laps[run.key]) / 1000)
+                    for run in selected
+                ]
+                durations = [sum(lap[2] for lap in work_laps[run.key]) for run in selected]
+                distances = [sum(lap[1] for lap in work_laps[run.key]) for run in selected]
+                detail_label = "aktiivtöö"
+            else:
+                selected = [run for run in group if run.pace_s_per_km is not None]
+                paces = [run.pace_s_per_km for run in selected]
+                durations = [run.duration_s for run in selected]
+                distances = [run.distance_m for run in selected]
+                detail_label = "jooks"
             pace_text = f"{_format_pace(statistics.median(paces))}/km" if paces else "—"
             lines.append(
-                f"  RPE {rpe:g}/10: {len(group):>3} jooksu · lõikudega {len(paces):>2} · keskmine töötempo {pace_text} · "
-                f"aktiivtöö mediaan {statistics.median(active_minutes):.0f} min / {statistics.median(active_km):.1f} km"
-                if paces else f"  RPE {rpe:g}/10: {len(group):>3} jooksu · aktiivseid lõike pole"
+                f"  RPE {rpe:g}/10: {len(group):>3} jooksu · arvestatud {len(paces):>3} · "
+                f"mediaantempo {pace_text} · {detail_label} mediaan "
+                f"{statistics.median(durations) / 60:.0f} min / {statistics.median(distances) / 1000:.1f} km"
+                if paces else f"  RPE {rpe:g}/10: {len(group):>3} jooksu · sobiva tempoga andmeid pole"
             )
 
         pace_bins: dict[int, dict[str, list[tuple[float, float, float]]]] = {}
         run_by_key = {run.key: run for run in runs_with_rpe}
         for run in runs_with_rpe:
-            for pace, distance, duration in work_laps[run.key]:
+            samples = (
+                work_laps.get(run.key, [])
+                if active_only
+                else [(run.pace_s_per_km, run.distance_m, run.duration_s)]
+                if run.pace_s_per_km is not None
+                else []
+            )
+            for pace, distance, duration in samples:
                 lower = int(pace // 15) * 15
                 pace_bins.setdefault(lower, {}).setdefault(run.key, []).append((pace, distance, duration))
-        lines.append("Tempo kaupa · 15-sekundilised vahemikud (n = eri treeningud):")
+        lines.append(
+            "Lõikude tempo kaupa · 15-sekundilised vahemikud (n = eri treeningud):"
+            if active_only
+            else "Jooksu keskmise tempo kaupa · 15-sekundilised vahemikud (n = treeningud):"
+        )
         for lower, grouped_runs in sorted(pace_bins.items()):
             rpes = [run_by_key[key].self_rpe for key in grouped_runs]
             workouts = len(grouped_runs)
@@ -958,24 +1029,31 @@ class RunAnalyzer(tk.Tk):
             minutes = [sum(lap[2] for lap in laps) / 60 for laps in grouped_runs.values()]
             distance_km = [sum(lap[1] for lap in laps) / 1000 for laps in grouped_runs.values()]
             label = f"{_format_pace(lower)}–{_format_pace(lower + 15)}/km"
+            count_label = f"{workouts} treeningut / {segments} lõiku" if active_only else f"{workouts} jooksu"
             lines.append(
-                f"  {label}: RPE {statistics.median(rpes):g} · {workouts} treeningut / {segments} lõiku · "
+                f"  {label}: RPE {statistics.median(rpes):g} · {count_label} · "
                 f"mediaan {statistics.median(minutes):g} min, {statistics.median(distance_km):g} km selles vahemikus"
             )
         feel_values = [run.self_feel for run in runs if run.self_feel is not None]
         if feel_values:
-            lines.append("RPE ja töölõikude tempo enesetunde järgi (workout_feel: 0 kehv – 100 hea):")
+            feel_pace_label = "töölõikude tempo" if active_only else "kogu jooksu keskmine tempo"
+            lines.append(f"RPE ja {feel_pace_label} enesetunde järgi (workout_feel: 0 kehv – 100 hea):")
             for feel in sorted(set(feel_values)):
                 group = [run for run in runs if run.self_feel == feel]
                 rpes = [run.self_rpe for run in group if run.self_rpe is not None]
-                paces = [
-                    sum(lap[2] for lap in work_laps[run.key]) / (sum(lap[1] for lap in work_laps[run.key]) / 1000)
-                    for run in group if work_laps.get(run.key)
-                ]
+                if active_only:
+                    paces = [
+                        sum(lap[2] for lap in work_laps[run.key])
+                        / (sum(lap[1] for lap in work_laps[run.key]) / 1000)
+                        for run in group if work_laps.get(run.key)
+                    ]
+                else:
+                    paces = [run.pace_s_per_km for run in group if run.pace_s_per_km is not None]
                 rpe_text = f"{statistics.median(rpes):g}/10" if rpes else "—"
                 pace_text = f"{_format_pace(statistics.mean(paces))}/km" if paces else "—"
+                pace_name = "keskmine töötempo" if active_only else "keskmine jooksutempo"
                 lines.append(
-                    f"  tunne {feel:g}/100: {len(group):>3} jooksu · mediaan-RPE {rpe_text} · keskmine töötempo {pace_text}"
+                    f"  tunne {feel:g}/100: {len(group):>3} jooksu · mediaan-RPE {rpe_text} · {pace_name} {pace_text}"
                 )
         self.summary.configure(state="normal")
         self.summary.delete("1.0", "end")
