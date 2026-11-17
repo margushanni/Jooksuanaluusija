@@ -292,6 +292,7 @@ class RunAnalyzer(tk.Tk):
         self.end_date_var = tk.StringVar(value="")
         self.min_pace_var = tk.StringVar(value="")
         self.max_pace_var = tk.StringVar(value="5:30")
+        self.run_filter_var = tk.StringVar(value="Kõik jooksud")
         self._date_defaults_set = False
         self._local_load_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._build_ui()
@@ -335,6 +336,19 @@ class RunAnalyzer(tk.Tk):
         for entry in (self.start_date_entry, self.end_date_entry):
             entry.bind("<Return>", lambda _event: self._refresh())
             entry.bind("<FocusOut>", lambda _event: self._refresh())
+
+        run_filter = ttk.Frame(outer)
+        run_filter.pack(fill="x", pady=(0, 8))
+        ttk.Label(run_filter, text="Analüüsi jooksud:").pack(side="left", padx=(0, 8))
+        self.run_filter_choice = ttk.Combobox(
+            run_filter,
+            textvariable=self.run_filter_var,
+            values=("Kõik jooksud", "Ainult aktiivlõikudega"),
+            state="readonly",
+            width=24,
+        )
+        self.run_filter_choice.pack(side="left")
+        self.run_filter_choice.bind("<<ComboboxSelected>>", lambda _event: self._refresh())
 
         pace_filter = ttk.Frame(outer)
         pace_filter.pack(fill="x", pady=(0, 8))
@@ -858,6 +872,7 @@ class RunAnalyzer(tk.Tk):
             run for run in self.runs.values()
             if (start_date is None or run.start.date() >= start_date)
             and (end_date is None or run.start.date() <= end_date)
+            and (self.run_filter_var.get() != "Ainult aktiivlõikudega" or bool(run.active_lap_paces))
         ]
         ordered = sorted(filtered, key=lambda run: run.start, reverse=True)
         for run in ordered:
@@ -894,8 +909,9 @@ class RunAnalyzer(tk.Tk):
         total_km = sum(run.distance_m for run in runs) / 1000
         total_hours = sum(run.duration_s for run in runs) / 3600
         lines = [f"Kokku: {len(runs)} jooksu · {total_km:.1f} km · {total_hours:.1f} tundi"]
+        lines.append(f"Jooksufilter: {self.run_filter_var.get()}")
         if not runs:
-            lines.append("Valitud kuupäevavahemikus jooksud puuduvad.")
+            lines.append("Valitud filtritele vastavaid jookse ei leidu.")
         rated = [run for run in runs if run.self_rpe is not None or run.self_feel is not None]
         unmarked = len(runs) - len(rated)
         lines.append(f"FIT-enesehinnang olemas: {len(rated)} jooksu · hinnang märkimata: {unmarked} jooksu")

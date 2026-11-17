@@ -41,3 +41,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** lisatud kiireima ja aeglaseima tempo piirid kujul `M:SS` min/km. Vaikimisi on aeglaseim piir 5:30/km; **Kõik aktiivlõigud** eemaldab piirid. Valik rakendub lõikude arvule, kaalutud töötempole ja kokkuvõtte tempoklassidele. Uuendatud kasutusjuhendid.
 - **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
 - **Tulemus:** analüüsi saab piiritleda sobiva aktiivlõikude tempovahemikuga. Visuaalne kontroll tegemata.
+
+## 2026-11-17 — Kõigi jooksude ja aktiivlõikudega jooksude filter
+
+- **Seotud Issue:** [#2 — Lisa jooksu tüübi ja tempovahemiku filtrid](https://github.com/margushanni/Jooksuanaluusija/issues/2).
+- **Eesmärk:** lisada valik kõigi jooksude ja ainult FIT-is aktiivlõike sisaldavate jooksude analüüsimiseks.
+- **Muudatused:** lisatud jooksufiltri valik; aktiivlõikudeta jooksud eemaldatakse tabelist ja kokkuvõttest ainult vastava filtri valimisel. Aktiivlõikude tempovahemik rakendub mõlema jooksufiltri korral. Uuendatud juhendid ja valmisoleku kirjeldus.
+- **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
+- **Tulemus:** kasutaja saab jooksude hulka piirata aktiivlõikudega treeningutele, jättes tempovahemiku filtri alles. Visuaalne kontroll tegemata.
