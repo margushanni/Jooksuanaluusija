@@ -23,13 +23,13 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 3. Impordib kasutaja valitud kuupäevavahemiku jooksude FIT-failid Garmin Connect Personal API kaudu ning jätab korduvad failid vahele.
 4. Loeb FIT-failist treeningu RPE ja enesetunde; puuduva hinnangu märgib „Hinnang - märkimata”.
 5. Kuvab jooksude kuupäeva, distantsi, kestuse ja enesehinnangu ning võimaldab valida analüüsitava kuupäevavahemiku kalendrivaates.
-6. Eristab FIT-failis aktiivseks märgitud töölõigud soojendusest ja taastumisest ning võtab tempoanalüüsi arvesse kuni 5:30/km lõigud.
+6. Eristab FIT-failis aktiivseks märgitud töölõigud soojendusest ja taastumisest ning laseb valida analüüsitavate lõikude tempovahemiku (vaikimisi kuni 5:30/km).
 7. Arvutab aktiivlõikude kaalutud keskmise töötempo ning võrdleb seda RPE ja aktiivse töö kestuse või distantsiga.
 
 **Edasi plaanitav:**
 
 8. Kuupäevavahemiku kiirvalikud: viimane kuu, viimased kuus kuud ja viimane aasta.
-9. Jooksude filtreerimine: kõik jooksud, ainult lõigutrennid või kasutaja valitud tempovahemik.
+9. Jooksude filtreerimine: kõik jooksud või ainult lõigutrennid.
 10. Mõõdiku valimine analüüsiks: RPE või pulsisagedus.
 11. Valitud ajavahemiku arenguvaade, mis näitab keskmise tempo muutust RPE või pulsisageduse lõikes. Filtri järgi kasutatakse kas kogu jooksu keskmist tempot või ainult aktiivlõikude kaalutud töötempot.
 
@@ -48,7 +48,7 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 1. Importida ja lugeda Garmini jooksuandmeid kellast, FIT-failidest või Personal API kaudu. *(Olemas)*
 2. Kuvada treeningud koos RPE ja aktiivsete töölõikude tempoga. *(Olemas)*
 3. Lisada kuupäevavahemiku perioodide kiirvalikud.
-4. Lisada jooksude tüübi ning tempovahemiku filtrid.
+4. Lisada jooksu tüübi filter: kõik jooksud või ainult lõigutrennid.
 5. Lisada analüüsitava mõõdiku valik RPE ja pulsisageduse vahel.
 6. Koostada valitud perioodi arenguvaade, kus keskmist tempot võrreldakse valitud pingutusmõõdikuga.
 7. Kontrollida arvutusi eri treeningutega, käsitleda puuduvaid andmeid ning täiendada kasutusjuhendit.
@@ -59,10 +59,10 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 - Kasutaja saab jooksud importida ühendatud kellast, valitud FIT-failidest või kuupäevavahemikuga Personal API päringuga.
 - Korduv import ei lisa sama treeningut teist korda ning isiklikud FIT-failid ja tokenivahemälu ei lähe GitHubi.
 - Tabelis kuvatakse treeningu põhiandmed ja FIT-is olevad RPE/enesetunde hinnangud; puuduva hinnangu puhul kuvatakse „Hinnang - märkimata”.
-- RPE-tempo kokkuvõte kasutab ainult aktiivseid töölõike, jätab taastelõigud välja ja arvestab tempoga kuni 5:30/km.
+- RPE-tempo kokkuvõte kasutab ainult kasutaja valitud tempovahemikku jäävaid aktiivlõike ning jätab soojendus- ja taastelõigud välja; vaikimisi on ülempiir 5:30/km.
 - Töötempo arvutus arvestab aktiivlõikude koguaega ja kogudistantsi ning kokkuvõttes saab võrrelda tulemusi ka töö kestuse ja distantsi järgi.
 - Kasutaja saab valida algus- ja lõppkuupäeva kalendrivaates ning tulemused uuenevad vastavalt valikule.
-- Kasutaja saab kombineerida jooksu tüübi ja tempovahemiku filtreid ning valida, kas pingutust võrreldakse RPE või pulsisagedusega.
+- Kasutaja saab kombineerida jooksu tüübi ja kuupäevavahemiku filtreid ning valida, kas pingutust võrreldakse RPE või pulsisagedusega.
 - Valitud ajavahemiku tulemus näitab keskmise tempo arengut valitud pingutusmõõdiku järgi; puuduva mõõdiku korral kuvatakse see arusaadavalt.
 - Kasutusjuhend selgitab käivitamist, importi, analüüsi ja isikuandmete kohalikku säilitamist.
 - Iga sisulise arenduskorra lõpus lisab Codex kuupäevastatud sissekande faili [`logi.md`](logi.md), et tegevused saaks hiljem päevikuks või blogipostituseks koondada. Püsiv juhis on failis [`AGENTS.md`](AGENTS.md). Logi kirjeldab arendustööd, mitte programmi kasutust.
@@ -90,7 +90,7 @@ Lühiajaline bearer-token salvestatakse lokaalselt faili `.garmin-private\bearer
 
 ## Analüüs
 
-Praegune versioon loeb RPE ja enesetunde otse FIT-faili enesehinnangu väljadest. Lõiguanalüüs võtab arvesse FIT-is `active` märgisega töölõike kuni tempoga 5:30/km; soojendus ja taastelõigud jäetakse välja. Töötempo on aktiivlõikude koguaja ja kogudistantsi suhe, nii et pikemad lõigud mõjutavad tulemust rohkem. Kuupäevavahemiku, täiendavate filtrite ning RPE/pulsi valikuga arenguvaade on projekti järgmine arendusetapp.
+Praegune versioon loeb RPE ja enesetunde otse FIT-faili enesehinnangu väljadest. Lõiguanalüüs kasutab FIT-is `active` märgisega töölõike ning võimaldab valida analüüsitava tempovahemiku (vaikimisi kuni 5:30/km); soojendus ja taastelõigud jäetakse välja. Töötempo on valitud aktiivlõikude koguaja ja kogudistantsi suhe, nii et pikemad lõigud mõjutavad tulemust rohkem. Täiendavad jooksufiltrid ning RPE/pulsi valikuga arenguvaade on projekti järgmine arendusetapp.
 
 Kui FIT-failis enesehinnang puudub, kuvatakse **Hinnang - märkimata**.
 

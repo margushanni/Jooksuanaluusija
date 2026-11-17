@@ -33,3 +33,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** API impordi nupp avab kuupäevavahemiku akna kahe kalendrivaatega; kuupäevi saab ka käsitsi sisestada. Päring kasutab valitud kuupäevi ja pärast importi seatakse analüüsivahemik samale perioodile. Vaikimisi kasutatakse analüüsivahemikku või 2025. aastat, kui see puudub. Uuendatud kasutusjuhendid.
 - **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
 - **Tulemus:** API import ei ole enam piiratud 2025. aastaga; kasutaja saab valida imporditava ajavahemiku. Visuaalne kontroll tegemata.
+
+## 2026-11-17 — Aktiivlõikude tempovahemiku valik
+
+- **Seotud Issue:** [#2 — Lisa jooksu tüübi ja tempovahemiku filtrid](https://github.com/margushanni/Jooksuanaluusija/issues/2).
+- **Eesmärk:** lubada valida aktiivlõikude tempovahemik, mille põhjal tabeli lõigunäitajad ja RPE kokkuvõte arvutatakse.
+- **Muudatused:** lisatud kiireima ja aeglaseima tempo piirid kujul `M:SS` min/km. Vaikimisi on aeglaseim piir 5:30/km; **Kõik aktiivlõigud** eemaldab piirid. Valik rakendub lõikude arvule, kaalutud töötempole ja kokkuvõtte tempoklassidele. Uuendatud kasutusjuhendid.
+- **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
+- **Tulemus:** analüüsi saab piiritleda sobiva aktiivlõikude tempovahemikuga. Visuaalne kontroll tegemata.

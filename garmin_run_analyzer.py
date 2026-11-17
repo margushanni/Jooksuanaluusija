@@ -30,7 +30,7 @@ FIT_DIR = ROOT / "data" / "fit"
 INCOMING_DIR = ROOT / "data" / ".mtp-incoming"
 API_INCOMING_DIR = ROOT / "data" / ".api-incoming"
 TOKEN_CACHE = ROOT / ".garmin-private" / "bearer-token-cache.json"
-PACE_LIMIT_S_PER_KM = 5 * 60 + 30
+DEFAULT_MAX_PACE_S_PER_KM = 5 * 60 + 30
 
 
 @dataclass
@@ -165,13 +165,16 @@ def decode_run(path: Path) -> Run | None:
     )
 
 
-def _qualifying_work_laps(run: Run) -> list[tuple[float, float, float]]:
+def _qualifying_work_laps(
+    run: Run, min_pace: float | None = None, max_pace: float | None = DEFAULT_MAX_PACE_S_PER_KM
+) -> list[tuple[float, float, float]]:
     return [
         (pace, distance, duration)
         for pace, distance, duration in zip(
             run.active_lap_paces, run.active_lap_distances, run.active_lap_durations
         )
-        if pace <= PACE_LIMIT_S_PER_KM
+        if (min_pace is None or pace >= min_pace)
+        and (max_pace is None or pace <= max_pace)
     ]
 
 
@@ -287,6 +290,8 @@ class RunAnalyzer(tk.Tk):
         self.runs: dict[str, Run] = {}
         self.start_date_var = tk.StringVar(value="")
         self.end_date_var = tk.StringVar(value="")
+        self.min_pace_var = tk.StringVar(value="")
+        self.max_pace_var = tk.StringVar(value="5:30")
         self._date_defaults_set = False
         self._local_load_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._build_ui()
@@ -300,7 +305,7 @@ class RunAnalyzer(tk.Tk):
         ttk.Label(outer, text="Garmini jooksuanalüüs", font=("Segoe UI", 18, "bold")).pack(anchor="w")
         ttk.Label(
             outer,
-            text="RPE-tempovõrdluses kasutatakse ainult FIT-is aktiivseks märgitud lõike kuni 5:30/km; soojendus ja taastumine jäetakse välja.",
+            text="RPE-tempovõrdluses saab valida FIT-is aktiivseks märgitud lõikude tempovahemiku; soojendus ja taastumine jäetakse välja.",
             wraplength=940,
         ).pack(anchor="w", pady=(4, 12))
 
@@ -331,6 +336,20 @@ class RunAnalyzer(tk.Tk):
             entry.bind("<Return>", lambda _event: self._refresh())
             entry.bind("<FocusOut>", lambda _event: self._refresh())
 
+        pace_filter = ttk.Frame(outer)
+        pace_filter.pack(fill="x", pady=(0, 8))
+        ttk.Label(pace_filter, text="Analüüsitavate aktiivlõikude tempo (min/km):").pack(side="left", padx=(0, 8))
+        ttk.Label(pace_filter, text="Alates (kiireim)").pack(side="left")
+        self.min_pace_entry = ttk.Entry(pace_filter, textvariable=self.min_pace_var, width=7)
+        self.min_pace_entry.pack(side="left", padx=(4, 8))
+        ttk.Label(pace_filter, text="kuni (aeglaseim)").pack(side="left")
+        self.max_pace_entry = ttk.Entry(pace_filter, textvariable=self.max_pace_var, width=7)
+        self.max_pace_entry.pack(side="left", padx=(4, 8))
+        ttk.Button(pace_filter, text="Rakenda", command=self._refresh).pack(side="left")
+        ttk.Button(pace_filter, text="Kõik aktiivlõigud", command=self._clear_pace_filter).pack(side="left", padx=8)
+        for entry in (self.min_pace_entry, self.max_pace_entry):
+            entry.bind("<Return>", lambda _event: self._refresh())
+
         self.load_progress = ttk.Progressbar(outer, mode="determinate", maximum=1)
         self.load_progress.pack(fill="x", pady=(0, 3))
         self.load_status = tk.StringVar(value="")
@@ -346,7 +365,7 @@ class RunAnalyzer(tk.Tk):
             "self_rating": ("Enesehinnang", 180),
             "distance": ("Distants", 100),
             "duration": ("Aeg", 90),
-            "active_laps": ("Lõikeid ≤5:30", 90),
+            "active_laps": ("Valitud lõikeid", 100),
             "work_pace": ("Töötempo", 105),
             "work_time": ("Töömin", 75),
             "work_distance": ("Töökilomeetrid", 110),
@@ -490,6 +509,11 @@ class RunAnalyzer(tk.Tk):
         self.start_date_var.set("")
         self.end_date_var.set("")
         self._date_defaults_set = True
+        self._refresh()
+
+    def _clear_pace_filter(self) -> None:
+        self.min_pace_var.set("")
+        self.max_pace_var.set("")
         self._refresh()
 
     def _open_calendar(
@@ -819,6 +843,15 @@ class RunAnalyzer(tk.Tk):
         if start_date and end_date and start_date > end_date:
             self.status.set("Alguskuupäev peab olema lõppkuupäevast varasem või sama.")
             return
+        try:
+            min_pace = _parse_pace(self.min_pace_var.get())
+            max_pace = _parse_pace(self.max_pace_var.get())
+        except ValueError:
+            self.status.set("Tempo sisesta kujul M:SS min/km, näiteks 4:15.")
+            return
+        if min_pace is not None and max_pace is not None and min_pace > max_pace:
+            self.status.set("Kiireima tempo piir peab olema aeglasema tempo piirist väiksem või sama.")
+            return
         for row in self.table.get_children():
             self.table.delete(row)
         filtered = [
@@ -829,7 +862,7 @@ class RunAnalyzer(tk.Tk):
         ordered = sorted(filtered, key=lambda run: run.start, reverse=True)
         for run in ordered:
             key = run.key
-            work_laps = _qualifying_work_laps(run)
+            work_laps = _qualifying_work_laps(run, min_pace, max_pace)
             work_pace = (
                 sum(lap[2] for lap in work_laps) / (sum(lap[1] for lap in work_laps) / 1000)
                 if work_laps else None
@@ -837,7 +870,7 @@ class RunAnalyzer(tk.Tk):
             pace_label = (
                 _format_pace(work_pace)
                 if work_pace is not None
-                else "Pole ≤5:30" if run.active_lap_paces else "FIT-is märkimata"
+                else "Pole vahemikus" if run.active_lap_paces else "FIT-is märkimata"
             )
             self.table.insert(
                 "",
@@ -855,9 +888,9 @@ class RunAnalyzer(tk.Tk):
                     f"{run.ascent_m:.0f} m" if run.ascent_m is not None else "—",
                 ),
             )
-        self._update_summary(ordered)
+        self._update_summary(ordered, min_pace, max_pace)
 
-    def _update_summary(self, runs: list[Run]) -> None:
+    def _update_summary(self, runs: list[Run], min_pace: float | None, max_pace: float | None) -> None:
         total_km = sum(run.distance_m for run in runs) / 1000
         total_hours = sum(run.duration_s for run in runs) / 3600
         lines = [f"Kokku: {len(runs)} jooksu · {total_km:.1f} km · {total_hours:.1f} tundi"]
@@ -868,14 +901,16 @@ class RunAnalyzer(tk.Tk):
         lines.append(f"FIT-enesehinnang olemas: {len(rated)} jooksu · hinnang märkimata: {unmarked} jooksu")
         runs_with_rpe = [run for run in runs if run.self_rpe is not None]
         work_laps = {
-            run.key: _qualifying_work_laps(run)
+            run.key: _qualifying_work_laps(run, min_pace, max_pace)
             for run in runs_with_rpe
         }
         runs_with_active_laps = [run for run in runs_with_rpe if work_laps[run.key]]
+        pace_range = _format_pace_range(min_pace, max_pace)
         lines.append(
-            f"Lõiguanalüüs: {len(runs_with_active_laps)}/{len(runs_with_rpe)} RPE-ga jooksus on aktiivseid lõike tempoga kuni 5:30/km."
+            f"Lõiguanalüüs ({pace_range}): {len(runs_with_active_laps)}/{len(runs_with_rpe)} "
+            "RPE-ga jooksus on valitud vahemikku jäävaid aktiivlõike."
         )
-        lines.append("RPE järgi · aktiivse töö aja ja distantsi kaalutud keskmine tempo kuni 5:30/km:")
+        lines.append(f"RPE järgi · valitud lõikude aja ja distantsi kaalutud keskmine tempo ({pace_range}):")
         rpe_values = sorted({run.self_rpe for run in runs if run.self_rpe is not None})
         for rpe in rpe_values:
             group = [run for run in runs if run.self_rpe == rpe]
@@ -897,7 +932,7 @@ class RunAnalyzer(tk.Tk):
         run_by_key = {run.key: run for run in runs_with_rpe}
         for run in runs_with_rpe:
             for pace, distance, duration in work_laps[run.key]:
-                lower = min(int(pace // 15) * 15, PACE_LIMIT_S_PER_KM - 15)
+                lower = int(pace // 15) * 15
                 pace_bins.setdefault(lower, {}).setdefault(run.key, []).append((pace, distance, duration))
         lines.append("Tempo kaupa · 15-sekundilised vahemikud (n = eri treeningud):")
         for lower, grouped_runs in sorted(pace_bins.items()):
@@ -953,6 +988,31 @@ def _format_pace(seconds_per_km: float | None) -> str:
         return "—"
     total = int(round(seconds_per_km))
     return f"{total // 60}:{total % 60:02d}"
+
+
+def _parse_pace(value: str) -> float | None:
+    value = value.strip()
+    if not value:
+        return None
+    parts = value.split(":")
+    if len(parts) != 2 or not all(part.isdigit() for part in parts):
+        raise ValueError("Tempo peab olema kujul M:SS.")
+    minutes, seconds = map(int, parts)
+    if seconds >= 60:
+        raise ValueError("Tempo sekundid peavad jääma vahemikku 00–59.")
+    if minutes == 0 and seconds == 0:
+        raise ValueError("Tempo peab olema nullist suurem.")
+    return float(minutes * 60 + seconds)
+
+
+def _format_pace_range(min_pace: float | None, max_pace: float | None) -> str:
+    if min_pace is None and max_pace is None:
+        return "kõik tempod"
+    if min_pace is None:
+        return f"kuni {_format_pace(max_pace)}/km"
+    if max_pace is None:
+        return f"alates {_format_pace(min_pace)}/km"
+    return f"{_format_pace(min_pace)}–{_format_pace(max_pace)}/km"
 
 
 if __name__ == "__main__":
