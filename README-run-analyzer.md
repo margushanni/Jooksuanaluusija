@@ -19,7 +19,7 @@ Esimesel käivitamisel paigaldatakse vajalik SDK lokaalsesse `.venv` keskkonda n
 1. Käivita programm.
 2. Vajuta **Impordi 2025 API-st** ja sisesta Garmin Personal API võti avanevasse peidetud sisestusaknasse. Võtit ei salvestata.
 3. Programm otsib Garmin Connectist 2025. aasta jooksud, laeb iga tegevuse FIT-faili alla ja lisab jooksud lokaalsesse analüüsi.
-4. Analüüsiaasta valik lülitub 2025 peale. Vali **Kõik aastad**, kui soovid näha kõiki lokaalseid jookse.
+4. Kuupäevavahemik lülitub 2025. aastale. Muuda algus- ja lõppkuupäeva kalendrivaate nuppudega või kirjuta kuupäev kujul `AAAA-KK-PP`. Vali **Kuva kõik kuupäevad**, et analüüsida kõiki lokaalseid jookse.
 
 Import võib sõltuvalt jooksude arvust aega võtta. Sama FIT-faili kordusimport jäetakse vahele. Lühiajaline API bearer-token jääb lokaalselt faili `.garmin-private\bearer-token-cache.json`; treeningute FIT-failid asuvad kaustas `data\fit`.
 
@@ -36,4 +36,6 @@ MTP lugemiseks peab kell olema Windowsiga ühendatud andmekaabliga. Sulge enne i
 
 ## Andmed ja kokkuvõtted
 
-Tabel näitab treeningu kuupäeva, FIT-enesehinnangut (RPE skaalal 0–10 ja enesetunne skaalal 0–100), distantsi, kestust ning kuni 5:30/km aktiivsete töölõikude arvu, tööaega, töödistantse ja töötempot. Lõiguanalüüs kasutab ainult FIT-is `active`-märgisega ringe; soojendus, taastelõigud ja lõdvestus jäetakse välja. Töötempo arvutatakse aktiivlõikude koguaja ja kogudistantsi suhtena, et pikemad lõigud saaksid tempole rohkem kaalu. RPE kokkuvõte arvutab nende töötempode keskmise RPE ja töökoormuse järgi; tempo vahemikud on 15 sekundit. Kui aktiivseid lõike FIT-failis ei eristata, kuvatakse **FIT-is märkimata**; kui aktiivsed lõigud on olemas, kuid kõik on aeglasemad kui 5:30/km, kuvatakse **Pole ≤5:30**. Kui enesehinnangu väljad puuduvad, kuvatakse **Hinnang - märkimata**. Aastavalikuga saab analüüsi piiritleda näiteks ainult 2025. aasta jooksudega.
+Tabel näitab treeningu kuupäeva, FIT-enesehinnangut (RPE skaalal 0–10 ja enesetunne skaalal 0–100), distantsi, kestust ning kuni 5:30/km aktiivsete töölõikude arvu, tööaega, töödistantse ja töötempot. Analüüsi saab piirata algus- ja lõppkuupäevaga; kuupäeva valimiseks ava vastava välja kõrval kalendrivaade. Kuupäeva võib ka otse sisestada kujul `AAAA-KK-PP`. **Kuva kõik kuupäevad** eemaldab piirangu. Valitud vahemik rakendub tabelile ja kokkuvõttele ning tühja vahemiku korral antakse sellest teada.
+
+Lõiguanalüüs kasutab ainult FIT-is `active`-märgisega ringe; soojendus, taastelõigud ja lõdvestus jäetakse välja. Töötempo arvutatakse aktiivlõikude koguaja ja kogudistantsi suhtena, et pikemad lõigud saaksid tempole rohkem kaalu. RPE kokkuvõte arvutab nende töötempode keskmise RPE ja töökoormuse järgi; tempo vahemikud on 15 sekundit. Kui aktiivseid lõike FIT-failis ei eristata, kuvatakse **FIT-is märkimata**; kui aktiivsed lõigud on olemas, kuid kõik on aeglasemad kui 5:30/km, kuvatakse **Pole ≤5:30**. Kui enesehinnangu väljad puuduvad, kuvatakse **Hinnang - märkimata**.

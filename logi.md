@@ -17,3 +17,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** kohalike FIT-failide dekodeerimine liigub taustalõime; aken kuvatakse enne laadimise lõppu ning edenemisriba ja olekuteade näitavad laadimise käiku ja tulemust.
 - **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
 - **Tulemus:** käivitus ei pea enam ootama kõigi kohalike FIT-failide järjestikust dekodeerimist enne kasutajaliidese kuvamist. Vajab kasutaja arvutis käivitamise kinnitust.
+
+## 2026-11-17 — Kalendriga kuupäevavahemik
+
+- **Seotud Issue:** [#1 — Lisa kuupäevavahemik ja perioodide kiirvalikud](https://github.com/margushanni/Jooksuanaluusija/issues/1).
+- **Eesmärk:** asendada analüüsiaasta valik vabalt valitava algus- ja lõppkuupäevaga.
+- **Muudatused:** lisatud kalendrivaatega kuupäevavalikud, kuupäevade käsitsi sisestus ning kõigi kuupäevade kuvamise nupp. Valitud vahemik filtreerib jooksude tabelit ja kokkuvõtet; 2025 API import seab vahemikuks 2025. aasta. Tühja vahemiku korral kuvatakse teade. Uuendatud käivitusjuhendit ja README projekti kirjeldust.
+- **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
+- **Tulemus:** kasutaja saab valida analüüsi kuupäevavahemiku kalendrist. Rakenduses visuaalne kontroll tegemata.

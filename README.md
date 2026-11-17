@@ -22,13 +22,13 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 2. Võimaldab valida FIT-faile või nende kausta käsitsi importimiseks.
 3. Impordib 2025. aasta jooksude FIT-failid Garmin Connect Personal API kaudu ning jätab korduvad failid vahele.
 4. Loeb FIT-failist treeningu RPE ja enesetunde; puuduva hinnangu märgib „Hinnang - märkimata”.
-5. Kuvab jooksude kuupäeva, distantsi, kestuse ja enesehinnangu ning võimaldab valida analüüsitava aasta.
+5. Kuvab jooksude kuupäeva, distantsi, kestuse ja enesehinnangu ning võimaldab valida analüüsitava kuupäevavahemiku kalendrivaates.
 6. Eristab FIT-failis aktiivseks märgitud töölõigud soojendusest ja taastumisest ning võtab tempoanalüüsi arvesse kuni 5:30/km lõigud.
 7. Arvutab aktiivlõikude kaalutud keskmise töötempo ning võrdleb seda RPE ja aktiivse töö kestuse või distantsiga.
 
 **Edasi plaanitav:**
 
-8. Kuupäevavahemiku käsitsi valimine ning kiirvalikud: viimane kuu, viimased kuus kuud ja viimane aasta.
+8. Kuupäevavahemiku kiirvalikud: viimane kuu, viimased kuus kuud ja viimane aasta.
 9. Jooksude filtreerimine: kõik jooksud, ainult lõigutrennid või kasutaja valitud tempovahemik.
 10. Mõõdiku valimine analüüsiks: RPE või pulsisagedus.
 11. Valitud ajavahemiku arenguvaade, mis näitab keskmise tempo muutust RPE või pulsisageduse lõikes. Filtri järgi kasutatakse kas kogu jooksu keskmist tempot või ainult aktiivlõikude kaalutud töötempot.
@@ -47,7 +47,7 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 
 1. Importida ja lugeda Garmini jooksuandmeid kellast, FIT-failidest või Personal API kaudu. *(Olemas)*
 2. Kuvada treeningud koos RPE ja aktiivsete töölõikude tempoga. *(Olemas)*
-3. Lisada kuupäevavahemiku valik ja perioodide kiirvalikud.
+3. Lisada kuupäevavahemiku perioodide kiirvalikud.
 4. Lisada jooksude tüübi ning tempovahemiku filtrid.
 5. Lisada analüüsitava mõõdiku valik RPE ja pulsisageduse vahel.
 6. Koostada valitud perioodi arenguvaade, kus keskmist tempot võrreldakse valitud pingutusmõõdikuga.
@@ -61,7 +61,7 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 - Tabelis kuvatakse treeningu põhiandmed ja FIT-is olevad RPE/enesetunde hinnangud; puuduva hinnangu puhul kuvatakse „Hinnang - märkimata”.
 - RPE-tempo kokkuvõte kasutab ainult aktiivseid töölõike, jätab taastelõigud välja ja arvestab tempoga kuni 5:30/km.
 - Töötempo arvutus arvestab aktiivlõikude koguaega ja kogudistantsi ning kokkuvõttes saab võrrelda tulemusi ka töö kestuse ja distantsi järgi.
-- Kasutaja saab valida algus- ja lõppkuupäeva või perioodi kiirvaliku (viimane kuu, kuus kuud või aasta) ning tulemused uuenevad vastavalt valikule.
+- Kasutaja saab valida algus- ja lõppkuupäeva kalendrivaates ning tulemused uuenevad vastavalt valikule.
 - Kasutaja saab kombineerida jooksu tüübi ja tempovahemiku filtreid ning valida, kas pingutust võrreldakse RPE või pulsisagedusega.
 - Valitud ajavahemiku tulemus näitab keskmise tempo arengut valitud pingutusmõõdiku järgi; puuduva mõõdiku korral kuvatakse see arusaadavalt.
 - Kasutusjuhend selgitab käivitamist, importi, analüüsi ja isikuandmete kohalikku säilitamist.

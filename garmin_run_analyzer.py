@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import hashlib
 import io
 import os
@@ -13,7 +14,7 @@ import threading
 import tkinter as tk
 import zipfile
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
 from typing import Any
@@ -284,7 +285,9 @@ class RunAnalyzer(tk.Tk):
         self.geometry("1020x700")
         self.minsize(840, 560)
         self.runs: dict[str, Run] = {}
-        self.year_var = tk.StringVar(value="Kõik aastad")
+        self.start_date_var = tk.StringVar(value="")
+        self.end_date_var = tk.StringVar(value="")
+        self._date_defaults_set = False
         self._local_load_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._build_ui()
         self._refresh()
@@ -308,12 +311,25 @@ class RunAnalyzer(tk.Tk):
         ttk.Button(actions, text="Vali FIT-failid…", command=self._choose_files).pack(side="left")
         self.api_button = ttk.Button(actions, text="Impordi 2025 API-st", command=self._import_2025_from_api)
         self.api_button.pack(side="left", padx=8)
-        ttk.Label(actions, text="Analüüsi aasta:").pack(side="left", padx=(12, 4))
-        self.year_choice = ttk.Combobox(
-            actions, textvariable=self.year_var, values=("Kõik aastad",), state="readonly", width=12
-        )
-        self.year_choice.pack(side="left")
-        self.year_choice.bind("<<ComboboxSelected>>", lambda _event: self._refresh())
+        date_filter = ttk.Frame(outer)
+        date_filter.pack(fill="x", pady=(0, 8))
+        ttk.Label(date_filter, text="Analüüsi kuupäevavahemik:").pack(side="left", padx=(0, 8))
+        ttk.Label(date_filter, text="Alates").pack(side="left")
+        self.start_date_entry = ttk.Entry(date_filter, textvariable=self.start_date_var, width=12)
+        self.start_date_entry.pack(side="left", padx=(4, 3))
+        ttk.Button(
+            date_filter, text="Vali kuupäev…", command=lambda: self._open_calendar(self.start_date_var)
+        ).pack(side="left", padx=(0, 10))
+        ttk.Label(date_filter, text="Kuni").pack(side="left")
+        self.end_date_entry = ttk.Entry(date_filter, textvariable=self.end_date_var, width=12)
+        self.end_date_entry.pack(side="left", padx=(4, 3))
+        ttk.Button(
+            date_filter, text="Vali kuupäev…", command=lambda: self._open_calendar(self.end_date_var)
+        ).pack(side="left", padx=(0, 8))
+        ttk.Button(date_filter, text="Kuva kõik kuupäevad", command=self._clear_date_filter).pack(side="left")
+        for entry in (self.start_date_entry, self.end_date_entry):
+            entry.bind("<Return>", lambda _event: self._refresh())
+            entry.bind("<FocusOut>", lambda _event: self._refresh())
 
         self.load_progress = ttk.Progressbar(outer, mode="determinate", maximum=1)
         self.load_progress.pack(fill="x", pady=(0, 3))
@@ -414,8 +430,6 @@ class RunAnalyzer(tk.Tk):
             elif kind == "done":
                 loaded, skipped, errors, examples, recovered = payload
                 self.runs.update(loaded)
-                if any(run.start.year == 2025 for run in self.runs.values()):
-                    self.year_var.set("2025")
                 self._refresh()
                 self.load_progress.configure(value=self.load_progress["maximum"])
                 summary = f"Kohalike FIT-failide laadimine valmis: {len(loaded)} jooksu."
@@ -471,6 +485,70 @@ class RunAnalyzer(tk.Tk):
                 f"Seade(d): {', '.join(device_names)}. {len(paths)} FIT-faili leitud; "
                 f"{added} jooksu lisatud, {skipped} vahele jäetud, {errors} viga."
             )
+
+    def _clear_date_filter(self) -> None:
+        self.start_date_var.set("")
+        self.end_date_var.set("")
+        self._date_defaults_set = True
+        self._refresh()
+
+    def _open_calendar(self, target_var: tk.StringVar) -> None:
+        try:
+            selected = date.fromisoformat(target_var.get())
+        except ValueError:
+            selected = date.today()
+        month = [selected.replace(day=1)]
+
+        popup = tk.Toplevel(self)
+        popup.title("Vali kuupäev")
+        popup.transient(self)
+        popup.resizable(False, False)
+        popup.grab_set()
+
+        header = ttk.Frame(popup, padding=(8, 8, 8, 4))
+        header.pack(fill="x")
+        body = ttk.Frame(popup, padding=(8, 0, 8, 8))
+        body.pack()
+        title = ttk.Label(header, width=18, anchor="center")
+
+        def shift_month(delta: int) -> None:
+            current = month[0]
+            index = current.year * 12 + current.month - 1 + delta
+            month[0] = date(index // 12, index % 12 + 1, 1)
+            render_month()
+
+        ttk.Button(header, text="‹", width=3, command=lambda: shift_month(-1)).pack(side="left")
+        title.pack(side="left", padx=4)
+        ttk.Button(header, text="›", width=3, command=lambda: shift_month(1)).pack(side="left")
+
+        def choose_day(day_number: int) -> None:
+            target_var.set(month[0].replace(day=day_number).isoformat())
+            popup.destroy()
+            self._refresh()
+
+        def render_month() -> None:
+            month_names = (
+                "jaanuar", "veebruar", "märts", "aprill", "mai", "juuni",
+                "juuli", "august", "september", "oktoober", "november", "detsember",
+            )
+            title.configure(text=f"{month_names[month[0].month - 1]} {month[0].year}")
+            for child in body.winfo_children():
+                child.destroy()
+            for column, weekday in enumerate(("E", "T", "K", "N", "R", "L", "P")):
+                ttk.Label(body, text=weekday, width=4, anchor="center").grid(row=0, column=column, pady=(0, 4))
+            for row, week in enumerate(calendar.Calendar(firstweekday=0).monthdayscalendar(
+                month[0].year, month[0].month
+            ), start=1):
+                for column, day_number in enumerate(week):
+                    if day_number:
+                        ttk.Button(
+                            body,
+                            text=str(day_number),
+                            width=4,
+                            command=lambda value=day_number: choose_day(value),
+                        ).grid(row=row, column=column, padx=1, pady=1)
+
+        render_month()
 
     def _choose_folder(self) -> None:
         folder = filedialog.askdirectory(title="Vali Garmin Activity-kaust või FIT-failidega kaust")
@@ -576,7 +654,9 @@ class RunAnalyzer(tk.Tk):
     ) -> None:
         self.api_button.configure(state="normal")
         if paths:
-            self.year_var.set("2025")
+            self._date_defaults_set = True
+            self.start_date_var.set("2025-01-01")
+            self.end_date_var.set("2025-12-31")
             added, skipped, errors, examples = self._import_files(paths)
         else:
             added, skipped, errors, examples = 0, 0, 0, []
@@ -651,17 +731,28 @@ class RunAnalyzer(tk.Tk):
         return added, skipped, errors, examples
 
     def _refresh(self) -> None:
-        years = sorted({str(run.start.year) for run in self.runs.values()}, reverse=True)
-        year_values = ("Kõik aastad", *years)
-        self.year_choice.configure(values=year_values)
-        if self.year_var.get() not in year_values:
-            self.year_var.set("Kõik aastad")
+        if self.runs and not self._date_defaults_set and not (
+            self.start_date_var.get() or self.end_date_var.get()
+        ):
+            dates = [run.start.date() for run in self.runs.values()]
+            self.start_date_var.set(min(dates).isoformat())
+            self.end_date_var.set(max(dates).isoformat())
+            self._date_defaults_set = True
+        try:
+            start_date = date.fromisoformat(self.start_date_var.get()) if self.start_date_var.get() else None
+            end_date = date.fromisoformat(self.end_date_var.get()) if self.end_date_var.get() else None
+        except ValueError:
+            self.status.set("Kuupäev peab olema kujul AAAA-KK-PP või vali see kalendrist.")
+            return
+        if start_date and end_date and start_date > end_date:
+            self.status.set("Alguskuupäev peab olema lõppkuupäevast varasem või sama.")
+            return
         for row in self.table.get_children():
             self.table.delete(row)
-        selected_year = self.year_var.get()
         filtered = [
             run for run in self.runs.values()
-            if selected_year == "Kõik aastad" or str(run.start.year) == selected_year
+            if (start_date is None or run.start.date() >= start_date)
+            and (end_date is None or run.start.date() <= end_date)
         ]
         ordered = sorted(filtered, key=lambda run: run.start, reverse=True)
         for run in ordered:
@@ -698,6 +789,8 @@ class RunAnalyzer(tk.Tk):
         total_km = sum(run.distance_m for run in runs) / 1000
         total_hours = sum(run.duration_s for run in runs) / 3600
         lines = [f"Kokku: {len(runs)} jooksu · {total_km:.1f} km · {total_hours:.1f} tundi"]
+        if not runs:
+            lines.append("Valitud kuupäevavahemikus jooksud puuduvad.")
         rated = [run for run in runs if run.self_rpe is not None or run.self_feel is not None]
         unmarked = len(runs) - len(rated)
         lines.append(f"FIT-enesehinnang olemas: {len(rated)} jooksu · hinnang märkimata: {unmarked} jooksu")
