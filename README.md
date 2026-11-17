@@ -65,6 +65,7 @@ Programm on mõeldud jooksjatele, kes kasutavad Garmini kella või Garmin Connec
 - Kasutaja saab kombineerida jooksu tüübi ja tempovahemiku filtreid ning valida, kas pingutust võrreldakse RPE või pulsisagedusega.
 - Valitud ajavahemiku tulemus näitab keskmise tempo arengut valitud pingutusmõõdiku järgi; puuduva mõõdiku korral kuvatakse see arusaadavalt.
 - Kasutusjuhend selgitab käivitamist, importi, analüüsi ja isikuandmete kohalikku säilitamist.
+- Iga sisulise arenduskorra lõpus lisab Codex kuupäevastatud sissekande faili [`logi.md`](logi.md), et tegevused saaks hiljem päevikuks või blogipostituseks koondada. Püsiv juhis on failis [`AGENTS.md`](AGENTS.md). Logi kirjeldab arendustööd, mitte programmi kasutust.
 
 ---
 
