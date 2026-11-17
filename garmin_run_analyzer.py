@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import os
+import queue
 import shutil
 import statistics
 import sys
@@ -284,11 +285,10 @@ class RunAnalyzer(tk.Tk):
         self.minsize(840, 560)
         self.runs: dict[str, Run] = {}
         self.year_var = tk.StringVar(value="Kõik aastad")
+        self._local_load_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._build_ui()
-        self._load_local_files()
-        if any(run.start.year == 2025 for run in self.runs.values()):
-            self.year_var.set("2025")
         self._refresh()
+        self._start_local_file_load()
 
     def _build_ui(self) -> None:
         outer = ttk.Frame(self, padding=14)
@@ -314,6 +314,11 @@ class RunAnalyzer(tk.Tk):
         )
         self.year_choice.pack(side="left")
         self.year_choice.bind("<<ComboboxSelected>>", lambda _event: self._refresh())
+
+        self.load_progress = ttk.Progressbar(outer, mode="determinate", maximum=1)
+        self.load_progress.pack(fill="x", pady=(0, 3))
+        self.load_status = tk.StringVar(value="")
+        ttk.Label(outer, textvariable=self.load_status, foreground="#555", wraplength=950).pack(anchor="w")
 
         columns = (
             "date", "self_rating", "distance", "duration", "active_laps",
@@ -347,12 +352,33 @@ class RunAnalyzer(tk.Tk):
         self.status = tk.StringVar(value="Ühenda kell USB-ga ja vajuta otsingunuppu või vali Activity-kaust.")
         ttk.Label(outer, textvariable=self.status, foreground="#555", wraplength=950).pack(anchor="w", pady=(8, 0))
 
-    def _load_local_files(self) -> None:
+    def _start_local_file_load(self) -> None:
         FIT_DIR.mkdir(parents=True, exist_ok=True)
         unparsed_dir = ROOT / "data" / "unparsed"
         paths = sorted(FIT_DIR.glob("*.fit")) + sorted(unparsed_dir.glob("*.fit"))
+        if not paths:
+            self.load_status.set("Kohalikke FIT-faile ei leitud.")
+            return
+
+        self.load_progress.configure(maximum=len(paths), value=0)
+        self.load_status.set(f"Laadin kohalikke FIT-faile taustal: 0/{len(paths)}…")
+        worker = threading.Thread(
+            target=self._load_local_files,
+            args=(paths, unparsed_dir),
+            daemon=True,
+            name="fit-startup-loader",
+        )
+        worker.start()
+        self.after(100, self._process_local_file_queue)
+
+    def _load_local_files(self, paths: list[Path], unparsed_dir: Path) -> None:
+        loaded: dict[str, Run] = {}
+        skipped = 0
+        errors = 0
+        examples: list[str] = []
         recovered = 0
-        for path in paths:
+        total = len(paths)
+        for index, path in enumerate(paths, start=1):
             try:
                 run = decode_run(path)
                 if run:
@@ -364,11 +390,46 @@ class RunAnalyzer(tk.Tk):
                             shutil.move(str(path), str(target))
                         run.path = target
                         recovered += 1
-                    self.runs[run.key] = run
-            except Exception:
-                continue
-        if recovered:
-            self.status.set(f"Taastasin varasemast impordist {recovered} jooksu.")
+                    loaded[run.key] = run
+                else:
+                    skipped += 1
+            except Exception as exc:
+                errors += 1
+                if len(examples) < 3:
+                    examples.append(f"{path.name}: {exc}")
+            if index % 5 == 0 or index == total:
+                self._local_load_queue.put(("progress", (index, total)))
+        self._local_load_queue.put(("done", (loaded, skipped, errors, examples, recovered)))
+
+    def _process_local_file_queue(self) -> None:
+        while True:
+            try:
+                kind, payload = self._local_load_queue.get_nowait()
+            except queue.Empty:
+                break
+            if kind == "progress":
+                done, total = payload
+                self.load_progress.configure(maximum=total, value=done)
+                self.load_status.set(f"Laadin kohalikke FIT-faile taustal: {done}/{total}…")
+            elif kind == "done":
+                loaded, skipped, errors, examples, recovered = payload
+                self.runs.update(loaded)
+                if any(run.start.year == 2025 for run in self.runs.values()):
+                    self.year_var.set("2025")
+                self._refresh()
+                self.load_progress.configure(value=self.load_progress["maximum"])
+                summary = f"Kohalike FIT-failide laadimine valmis: {len(loaded)} jooksu."
+                if recovered:
+                    summary += f" Taastasin {recovered} varasemat jooksu."
+                if skipped:
+                    summary += f" {skipped} faili ei olnud jooksud."
+                if errors:
+                    summary += f" {errors} faili lugemisel tekkis viga."
+                    if examples:
+                        summary += f" Näide: {examples[0]}"
+                self.load_status.set(summary)
+                return
+        self.after(100, self._process_local_file_queue)
 
     def _scan_watch(self) -> None:
         folders = discover_activity_folders()
