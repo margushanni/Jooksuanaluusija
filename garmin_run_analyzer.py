@@ -352,7 +352,7 @@ class RunAnalyzer(tk.Tk):
 
         pace_filter = ttk.Frame(outer)
         pace_filter.pack(fill="x", pady=(0, 8))
-        ttk.Label(pace_filter, text="Analüüsitavate aktiivlõikude tempo (min/km):").pack(side="left", padx=(0, 8))
+        ttk.Label(pace_filter, text="Analüüsitav tempovahemik (min/km, m:ss):").pack(side="left", padx=(0, 8))
         ttk.Label(pace_filter, text="Alates (kiireim)").pack(side="left")
         self.min_pace_entry = ttk.Entry(pace_filter, textvariable=self.min_pace_var, width=7)
         self.min_pace_entry.pack(side="left", padx=(4, 8))

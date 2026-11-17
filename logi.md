@@ -57,3 +57,11 @@ Projektitööde lühike kronoloogiline arvestus. Iga uue arenduskorraga lisataks
 - **Muudatused:** režiimis **Kõik jooksud** filtreerimine ja RPE-tempokokkuvõte kasutavad kogu jooksu keskmist tempot. Režiimis **Ainult aktiivlõikudega** kasutatakse valitud tempovahemikku jäävaid aktiivlõike. Filtrile mittevastavad jooksud jäetakse tabelist ja kokkuvõttest välja; tabeli veerud kohanduvad režiimile. Täpsustatud kasutusjuhendit.
 - **Kontroll:** `git diff --check` läbis. Rakendust ega teste ei käivitatud.
 - **Tulemus:** tempovahemik käitub valitud režiimi järgi ning mittevastavaid jookse ei kuvata. Visuaalne kontroll tegemata.
+
+## 2026-11-17 — Tempovahemiku sildi täpsustamine
+
+- **Seotud Issue:** [#2 — Lisa jooksu tüübi ja tempovahemiku filtrid](https://github.com/margushanni/Jooksuanaluusija/issues/2).
+- **Eesmärk:** teha tempovahemiku sisestusvälja pealkiri lühemaks ja selgemaks.
+- **Muudatused:** silt on nüüd **Analüüsitav tempovahemik (min/km, m:ss)**.
+- **Kontroll:** `git diff --check` läbis.
+- **Tulemus:** kasutajaliides näitab selgemalt tempoühikut ja sisestusvormingut.
